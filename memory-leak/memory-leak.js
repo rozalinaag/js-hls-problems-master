@@ -21,8 +21,8 @@
 
             // bufferedSegments.shift();
 
-            let oldSegment = bufferedSegments.shift(); //segment object should be removed
-            oldSegment.arrayBuffer = null; //Clear the reference
+            let segment = bufferedSegments.shift(); //segment object should be removed
+            segment.arrayBuffer = null; //Clear the reference
         }
 
         var totalBufferDuration = bufferedSegments.reduce(function (duration, segment) {
@@ -43,7 +43,7 @@
         );
     }
 
-    // Load the media playlist from the CDN. The callback will be called with a String representing
+    // Load the media playlist from the CDN. Format M3U8. The callback will be called with a String representing
     // the XHR responseText.
     function loadPlaylist(url, callback) {
 
@@ -62,7 +62,7 @@
         xhr.send(null);
     }
 
-    // Load an MP4 segment from the CDN. The callback will be called with an ArrayBuffer representing
+    // Load an MP4 segment from the CDN with XMLHttpRequest. The callback will be called with an ArrayBuffer representing
     // the MP4 video content data.
     function loadSegment(url, callback) {
 
@@ -78,18 +78,20 @@
 
         xhr.open('GET', url);
 
-        xhr.responseType = 'arraybuffer';
+        xhr.responseType = 'arraybuffer'; //allows to load binary data (video file) that can be processed later. Media files contain not only text, but also binary data
 
         xhr.send(null);
     }
 
     // A quick (and fragile) way to resolve a segment URL with the playlist URL it belongs to.
     // This method of URL resolution is not likely to work for other streams.
+    // Converts a relative URL to a full URL - this is important for HLS where each segment has a full URL.
     function resolveSegmentURL(base, segmentPath) {
         return base.replace('vod.m3u8', segmentPath);
     }
 
     // Load an HLS (HTTP Live Streaming) media playlist and return the parsed segment definitions.
+    // Handles playlist in format M3U8.
     function loadAndParsePlaylist(url, callback) {
         loadPlaylist(url, function (playlist) {
 
@@ -111,6 +113,7 @@
                     currentSegment = null;
                 }
 
+                // Lines with #EXTINF contain duration.
                 if (line.indexOf('#EXTINF') === 0) {
                     duration = line.split(':').pop().replace(/,$/, '');
 
@@ -125,6 +128,7 @@
     }
 
     // Stream the movie into a mock buffer for testing purposes.
+    //Main function. Initializes loading and buffer.
     function streamMovie(playlistUrl) {
         loadAndParsePlaylist(playlistUrl, function (segmentList) {
 
@@ -147,6 +151,7 @@
                     currentSegmentIndex++
 
                     // Load a new segment every 2 seconds for this test.
+                    // Like a real player that loads segments with pauses.
                     setTimeout(loadAndBufferSegment, 2000);
                 });
             }
@@ -159,5 +164,4 @@
         console.log('Starting test');
         streamMovie(MEDIA_PLAYLIST_URL);
     });
-
 }());
