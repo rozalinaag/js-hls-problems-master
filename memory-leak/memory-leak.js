@@ -18,7 +18,11 @@
         // Remove segments which we no longer need to simulate playback.
         while (buffer.length > 5) {
             buffer.shift();
-            bufferedSegments.shift();
+
+            // bufferedSegments.shift();
+
+            let oldSegment = bufferedSegments.shift(); //segment object should be removed
+            oldSegment.arrayBuffer = null; //Clear the reference
         }
 
         var totalBufferDuration = bufferedSegments.reduce(function (duration, segment) {
