@@ -858,6 +858,17 @@
                     mediaSource.duration = playlist.duration;
                 }
 
+                const currentPosition = mediaElement.currentTime;
+                const bufferedEnd = sourceBufferController.getBufferedRangeEnd();
+                const forwardBuffer = bufferedEnd - currentPosition;
+
+                const MAX_FORWARD_BUFFER = 30; // seconds
+
+                if (forwardBuffer >= MAX_FORWARD_BUFFER) {
+                    setTimeout(startNextSegmentLifecycle, 1000); // check again in 1 second
+                    return;
+                }
+
                 const segment = selectNextSegment();
 
                 if (segment) {
