@@ -33,22 +33,70 @@ function makeDatabaseRequest(pathname, callback) {
     });
 }
 
-function findSegment(res, knownLength, position) {
+// function findSegment(res, knownLength, position) {
+//
+//     function tryNext(index) {
+//         makeDatabaseRequest(`/query?index=${index}`, (data) => {
+//             const { result } = data;
+//
+//             if (result.start <= position && position <= result.end) {
+//                 return sendJSONResponse(res, 200, data);
+//             }
+//
+//             tryNext(index + 1);
+//         });
+//     }
+//
+//     tryNext(0);
+// }
 
-    function tryNext(index) {
-        makeDatabaseRequest(`/query?index=${index}`, (data) => {
+function findSegment(res, knownLength, position) {
+    let low = 0;
+    let high = knownLength - 1;
+
+    function binarySearch() {
+        if (low > high) {
+            // didn't find segment
+            return sendJSONResponse(res, 404, { result: null });
+        }
+
+        const middleIndex = Math.floor((low + high) / 2);
+
+        makeDatabaseRequest(`/query?index=${middleIndex}`, (data) => {
             const { result } = data;
 
-            if (result.start <= position && position <= result.end) {
-                return sendJSONResponse(res, 200, data);
+            if (!result) {
+                return sendJSONResponse(res, 500, { error: 'Invalid data from DB' });
             }
 
-            tryNext(index + 1);
+            if (position < result.start) {
+                high = middleIndex - 1;
+                binarySearch();
+            } else if (position > result.end) {
+                low = middleIndex + 1;
+                binarySearch();
+            } else {
+                return sendJSONResponse(res, 200, data);
+            }
         });
     }
 
-    tryNext(0);
+    binarySearch();
 }
+
+// Linear Search:
+// {
+//     "min": 5835,
+//     "max": 22841,
+//     "average": 15551
+// }
+
+//BinarySearch:
+// {
+//     "min": 98,
+//     "max": 137,
+//     "average": 126
+// }
 
 function getRange(res) {
     console.log('get range from database ordered list');
